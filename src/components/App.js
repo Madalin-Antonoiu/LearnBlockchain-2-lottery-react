@@ -3,12 +3,14 @@ import lottery from '../ethereum/lottery'
 import web3 from '../web3';
 
 class App extends React.Component {
-    state = { manager: '', players: [], balance: '', value: '' };
+    state = { manager: '', players: [], balance: '', value: '', message: '' };
 
     async componentDidMount() {
         const manager = await lottery.methods.manager().call();
-        const players = await lottery.methods.getPlayers.call();
+        const players = await lottery.methods.getPlayers().call();
         const balance = await web3.eth.getBalance(lottery.options.address);
+
+        console.log(players);
 
         this.setState({ manager, players, balance });
     }
@@ -18,17 +20,36 @@ class App extends React.Component {
 
         const accounts = await web3.eth.getAccounts();
 
+        this.setState({ message: 'Waiting on transaction success...' });
+
         await lottery.methods.enter().send({
             from: accounts[0],
             value: web3.utils.toWei(this.state.value, 'ether')
         })
+
+        this.setState({ message: 'You have been entered!' });
+
+    }
+
+    onClick = async () => {
+        const accounts = await web3.eth.getAccounts();
+
+        this.setState({ message: 'Waiting on transaction success...' });
+
+        await lottery.methods.pickWinner().send({
+            from: accounts[0]
+        })
+
+        this.setState({ message: 'A winner has been picked!' });
+
+
     }
 
     render() {
         return <div>
-            <h2>Lottery Smart Contract</h2>
-            <p>This contract is managed by: {this.state.manager}</p>
-            <p>There are currently [{this.state.players.length}] people entered.</p>
+            <h2>Lottery Smart Contract </h2>
+            <p>This contract is on Rinkeby Testnet and is managed by: {this.state.manager}</p>
+            <p>There are currently {this.state.players.length} people entered.</p>
             <p> They are competing to win {web3.utils.fromWei(this.state.balance, 'ether')} ETH ! </p>
             <hr />
 
@@ -45,6 +66,13 @@ class App extends React.Component {
 
                 <button>Enter</button>
             </form>
+
+            <hr />
+            <h4>Ready to pick a winner?</h4>
+            <button onClick={this.onClick}>Pick a winner!</button>
+            <hr />
+
+            <h1>{this.state.message}</h1>
         </div>
     }
 }
